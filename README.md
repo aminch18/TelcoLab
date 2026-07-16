@@ -20,9 +20,12 @@ A subscription's lifecycle is naturally an actor: it has identity, owns its own 
 ## Status
 
 - [x] **v0** — minimal silo + `SubscriptionGrain` with persistent state
-- [ ] **v1** — full subscription lifecycle state machine (active → porting → rejected/cancelled) + tests
-- [ ] **v2** — porting events modeled as Orleans Streams
-- [ ] **v3** — Reminders for retries/timeouts
+- [x] **v1** — full lifecycle state machine (active → porting → rejected/cancelled), a simulated
+  clearing-house third party (async webhook), request/webhook correlation, reminder-based
+  retry & timeout, webhook authentication, and unit tests
+- [x] **v2** — porting results delivered over Orleans Streams, with a second (audit) consumer
+  subscribing to the same stream to demonstrate fan-out
+- [ ] **v3** — multi-silo clustering with a real clustering provider
 - [ ] **v4** — Observability (Orleans Dashboard + OpenTelemetry)
 - [ ] **v5** — Docs pass, linked from the accompanying article series
 
@@ -39,6 +42,22 @@ Starts a single-node localhost silo with in-memory grain storage and activates a
 - `src/TelcoLab.Abstractions` — grain interfaces and state contracts
 - `src/TelcoLab.Grains` — grain implementations
 - `src/TelcoLab.Silo` — silo host
+
+## Articles
+
+The design decisions behind this repo are written up as a series:
+
+0. One workflow, two architectures: actors vs. queues (introduction) —
+   [English](docs/articles/00-porting-two-architectures.en.md) ·
+   [Español](docs/articles/00-porting-two-architectures.es.md)
+1. Building the number-porting workflow with Orleans grains —
+   [English](docs/articles/01-porting-with-orleans.en.md) ·
+   [Español](docs/articles/01-porting-with-orleans.es.md)
+2. From a direct call to Orleans Streams (fan-out) —
+   [English](docs/articles/02-porting-with-streams.en.md) ·
+   [Español](docs/articles/02-porting-with-streams.es.md)
+
+Each article also has a rendered PDF beside it in [docs/articles/](docs/articles).
 
 ## License
 
