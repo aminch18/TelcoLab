@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TelcoLab.Abstractions/TelcoLab.Abstractions.csproj" />
+    <Project Path="src/TelcoLab.ClearingHouse.Contracts/TelcoLab.ClearingHouse.Contracts.csproj" />
+    <Project Path="src/TelcoLab.ClearingHouse/TelcoLab.ClearingHouse.csproj" />
+    <Project Path="src/TelcoLab.Grains/TelcoLab.Grains.csproj" />
+    <Project Path="src/TelcoLab.Silo/TelcoLab.Silo.csproj" />
+  </Folder>
+</Solution>
