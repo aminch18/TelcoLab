@@ -23,7 +23,18 @@ public class CallbackScheduler(
             try
             {
                 var client = httpClientFactory.CreateClient();
-                var response = await client.PostAsJsonAsync(callbackUrl, result);
+                using var message = new HttpRequestMessage(HttpMethod.Post, callbackUrl)
+                {
+                    Content = JsonContent.Create(result)
+                };
+
+                var secret = configuration["ClearingHouse:WebhookSecret"];
+                if (!string.IsNullOrEmpty(secret))
+                {
+                    message.Headers.Add("X-Webhook-Secret", secret);
+                }
+
+                var response = await client.SendAsync(message);
                 logger.LogInformation(
                     "Delivered {Outcome} for {Msisdn} to {Url} -> {Status}",
                     result.Outcome, result.Msisdn, callbackUrl, (int)response.StatusCode);

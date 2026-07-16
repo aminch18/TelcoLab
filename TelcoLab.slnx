@@ -6,4 +6,7 @@
     <Project Path="src/TelcoLab.Grains/TelcoLab.Grains.csproj" />
     <Project Path="src/TelcoLab.Silo/TelcoLab.Silo.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TelcoLab.Tests/TelcoLab.Tests.csproj" />
+  </Folder>
 </Solution>
