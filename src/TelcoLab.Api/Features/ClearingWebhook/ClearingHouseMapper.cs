@@ -1,9 +1,9 @@
-using TelcoLab.Abstractions;
 using TelcoLab.ClearingHouse.Contracts;
+using TelcoLab.Domain.Subscriptions;
 using ContractsReason = TelcoLab.ClearingHouse.Contracts.PortingRejectionReason;
-using DomainReason = TelcoLab.Abstractions.PortingRejectionReason;
+using DomainReason = TelcoLab.Domain.Subscriptions.PortingRejectionReason;
 
-namespace TelcoLab.Silo;
+namespace TelcoLab.Api.Features.ClearingWebhook;
 
 /// <summary>
 /// Anti-corruption layer: translates the clearing house's wire contract into our own

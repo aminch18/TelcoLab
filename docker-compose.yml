@@ -1,0 +1,70 @@
+# Full stack: Postgres + the simulated third party + a two-silo cluster.
+#   docker compose up --build
+# Then drive it against either silo:
+#   curl -XPOST localhost:5100/subscriptions/+34600000011/activate
+#   curl -XPOST localhost:5100/subscriptions/+34600000011/port -H 'content-type: application/json' -d '{"donorOperator":"ACME"}'
+#   curl localhost:5101/subscriptions/+34600000011        # same grain, other silo
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: telcolab
+      POSTGRES_PASSWORD: telcolab
+      POSTGRES_DB: telcolab
+    ports:
+      - "5432:5432"
+    # Orleans' ADO.NET providers do not auto-create their schema. Postgres runs every
+    # .sql in this directory, in name order, on first initialisation — so 01..04 set up
+    # the clustering, persistence and reminder tables before the silo ever connects.
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telcolab -d telcolab"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  clearinghouse:
+    build:
+      context: .
+      dockerfile: src/TelcoLab.ClearingHouse/Dockerfile
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ClearingHouse__CallbackDelaySeconds: "3"
+      ClearingHouse__WebhookSecret: dev-shared-secret
+
+  # Two silos, identical config apart from the port they publish on. They find each
+  # other through Postgres membership and advertise their own container IP ("auto").
+  silo1:
+    build:
+      context: .
+      dockerfile: src/TelcoLab.Api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5100:8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=telcolab;Username=telcolab;Password=telcolab"
+      TelcoLab__ClearingHouseUrl: http://clearinghouse:8080
+      TelcoLab__CallbackBaseUrl: http://silo1:8080
+      TelcoLab__WebhookSecret: dev-shared-secret
+      Orleans__AdvertisedIP: auto
+
+  silo2:
+    build:
+      context: .
+      dockerfile: src/TelcoLab.Api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5101:8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=telcolab;Username=telcolab;Password=telcolab"
+      TelcoLab__ClearingHouseUrl: http://clearinghouse:8080
+      TelcoLab__CallbackBaseUrl: http://silo2:8080
+      TelcoLab__WebhookSecret: dev-shared-secret
+      Orleans__AdvertisedIP: auto

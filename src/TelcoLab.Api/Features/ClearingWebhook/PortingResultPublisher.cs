@@ -1,8 +1,9 @@
 using Orleans.Runtime;
 using Orleans.Streams;
-using TelcoLab.Abstractions;
+using TelcoLab.Domain;
+using TelcoLab.Domain.Subscriptions;
 
-namespace TelcoLab.Silo;
+namespace TelcoLab.Api.Features.ClearingWebhook;
 
 public interface IPortingResultPublisher
 {

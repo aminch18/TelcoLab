@@ -1,9 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Orleans.Streams;
-using TelcoLab.Abstractions;
 
-namespace TelcoLab.Grains;
+namespace TelcoLab.Domain.Subscriptions;
 
 // The grain subscribes to its own per-MSISDN porting-results stream. The webhook edge
 // publishes to that stream instead of calling the grain directly, which decouples the
@@ -15,14 +14,6 @@ public class SubscriptionGrain(
     ILogger<SubscriptionGrain> logger)
     : Grain, ISubscriptionGrain, IRemindable
 {
-    public override async Task OnActivateAsync(CancellationToken cancellationToken)
-    {
-        var stream = this.GetStreamProvider(StreamConstants.ProviderName)
-            .GetStream<PortingResult>(StreamId.Create(StreamConstants.PortingResults, this.GetPrimaryKeyString()));
-        await stream.SubscribeAsync((result, _) => ApplyPortingResultAsync(result));
-        await base.OnActivateAsync(cancellationToken);
-    }
-
     // The watchdog both retries a submission that failed and times the port out if the
     // clearing house never replies. Reminders survive silo restarts, so a port left in
     // flight for hours or days is still eventually resolved. Orleans reminders have a
@@ -31,6 +22,14 @@ public class SubscriptionGrain(
     private const int MaxPortingAttempts = 3;
     private static readonly TimeSpan WatchdogDue = TimeSpan.FromMinutes(1);
     private static readonly TimeSpan WatchdogPeriod = TimeSpan.FromMinutes(1);
+
+    public override async Task OnActivateAsync(CancellationToken cancellationToken)
+    {
+        var stream = this.GetStreamProvider(StreamConstants.ProviderName)
+            .GetStream<PortingResult>(StreamId.Create(StreamConstants.PortingResults, this.GetPrimaryKeyString()));
+        await stream.SubscribeAsync((result, _) => ApplyPortingResultAsync(result));
+        await base.OnActivateAsync(cancellationToken);
+    }
 
     public Task<SubscriptionState> GetStateAsync() => Task.FromResult(state.State);
 

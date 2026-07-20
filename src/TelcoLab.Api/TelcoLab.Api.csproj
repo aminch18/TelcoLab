@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-TelcoLab.Silo-f9e4e120-a2ef-4116-8543-881c499d7dce</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinApiLib.Endpoints" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Orleans.Server" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Streaming" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Reminders" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.Memory" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Persistence.AdoNet" Version="10.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Reminders.AdoNet" Version="10.2.1" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TelcoLab.Domain\TelcoLab.Domain.csproj" />
+    <ProjectReference Include="..\TelcoLab.ClearingHouse.Contracts\TelcoLab.ClearingHouse.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="MinApiLib.Endpoints" />
+  </ItemGroup>
+</Project>

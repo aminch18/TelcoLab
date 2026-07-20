@@ -1,5 +1,5 @@
 using Orleans.TestingHost;
-using TelcoLab.Abstractions;
+using TelcoLab.Domain.Subscriptions;
 
 namespace TelcoLab.Tests;
 

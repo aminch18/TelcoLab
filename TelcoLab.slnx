@@ -1,10 +1,9 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/TelcoLab.Abstractions/TelcoLab.Abstractions.csproj" />
+    <Project Path="src/TelcoLab.Api/TelcoLab.Api.csproj" />
     <Project Path="src/TelcoLab.ClearingHouse.Contracts/TelcoLab.ClearingHouse.Contracts.csproj" />
     <Project Path="src/TelcoLab.ClearingHouse/TelcoLab.ClearingHouse.csproj" />
-    <Project Path="src/TelcoLab.Grains/TelcoLab.Grains.csproj" />
-    <Project Path="src/TelcoLab.Silo/TelcoLab.Silo.csproj" />
+    <Project Path="src/TelcoLab.Domain/TelcoLab.Domain.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TelcoLab.Tests/TelcoLab.Tests.csproj" />

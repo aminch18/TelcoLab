@@ -25,23 +25,58 @@ A subscription's lifecycle is naturally an actor: it has identity, owns its own 
   retry & timeout, webhook authentication, and unit tests
 - [x] **v2** — porting results delivered over Orleans Streams, with a second (audit) consumer
   subscribing to the same stream to demonstrate fan-out
-- [ ] **v3** — multi-silo clustering with a real clustering provider
+- [x] **v3** — durable state, reminders and clustering on PostgreSQL (ADO.NET providers), with a
+  multi-silo cluster verified across two nodes
 - [ ] **v4** — Observability (Orleans Dashboard + OpenTelemetry)
 - [ ] **v5** — Docs pass, linked from the accompanying article series
 
-## Running locally
+## Running
+
+### Full stack in containers (recommended)
+
+Postgres + the simulated third party + a two-silo cluster, deployable to any container
+environment. The Orleans schema is created automatically from `db/`:
 
 ```bash
-dotnet run --project src/TelcoLab.Silo
+docker compose up --build
 ```
 
-Starts a single-node localhost silo with in-memory grain storage and activates a demo `SubscriptionGrain` on startup.
+Drive it against either silo — a subscription is the same actor whichever one you call:
+
+```bash
+curl -XPOST localhost:5100/subscriptions/+34600000011/activate
+curl -XPOST localhost:5100/subscriptions/+34600000011/port \
+     -H 'content-type: application/json' -d '{"donorOperator":"ACME"}'
+curl localhost:5101/subscriptions/+34600000011          # same grain, other silo
+```
+
+Each silo exposes `/health` and `/health/ready` for orchestrator probes.
+
+### Single silo, no infrastructure
+
+In-memory storage (lost on restart) — used by the unit tests and the quick local demo, so no
+Docker is needed:
+
+```bash
+dotnet run --project src/TelcoLab.Api
+```
+
+Without a `ConnectionStrings:Postgres` value the silo falls back to in-memory clustering and
+storage; set it (and `Orleans:AdvertisedIP`) to run durable and clustered.
 
 ## Project layout
 
-- `src/TelcoLab.Abstractions` — grain interfaces and state contracts
-- `src/TelcoLab.Grains` — grain implementations
-- `src/TelcoLab.Silo` — silo host
+The domain is organised by aggregate; the API host is organised by feature (vertical slices),
+with endpoints built on [MinApiLib](https://github.com/fernandoescolar/MinApiLib) — one record
+per endpoint, auto-discovered.
+
+- `src/TelcoLab.Domain` — the domain, by aggregate: `Subscriptions/`, `Auditing/` (grains,
+  state, contracts)
+- `src/TelcoLab.Api` — the silo host, by feature: `Features/{ActivateSubscription, RequestPorting,
+  GetSubscription, GetAudit, ClearingWebhook}/` + `Infrastructure/`
+- `src/TelcoLab.ClearingHouse` (+ `.Contracts`) — the simulated third party
+- `db/` — Orleans PostgreSQL setup scripts, run automatically by Postgres on first start
+- `tests/TelcoLab.Tests` — grain state-machine and stream tests
 
 ## Articles
 
@@ -56,6 +91,12 @@ The design decisions behind this repo are written up as a series:
 2. From a direct call to Orleans Streams (fan-out) —
    [English](docs/articles/02-porting-with-streams.en.md) ·
    [Español](docs/articles/02-porting-with-streams.es.md)
+3. From one silo to a real cluster on Postgres —
+   [English](docs/articles/03-clustering-and-storage.en.md) ·
+   [Español](docs/articles/03-clustering-and-storage.es.md)
+4. When *not* to reach for Orleans (the honest scorecard) —
+   [English](docs/articles/04-when-not-to-use-orleans.en.md) ·
+   [Español](docs/articles/04-when-not-to-use-orleans.es.md)
 
 Each article also has a rendered PDF beside it in [docs/articles/](docs/articles).
 

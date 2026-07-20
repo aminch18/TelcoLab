@@ -2,7 +2,9 @@ using System.Diagnostics;
 using Orleans.Runtime;
 using Orleans.Streams;
 using Orleans.TestingHost;
-using TelcoLab.Abstractions;
+using TelcoLab.Domain;
+using TelcoLab.Domain.Auditing;
+using TelcoLab.Domain.Subscriptions;
 
 namespace TelcoLab.Tests;
 

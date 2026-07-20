@@ -1,8 +1,8 @@
 using System.Net.Http.Json;
 using TelcoLab.ClearingHouse.Contracts;
-using TelcoLab.Grains;
+using TelcoLab.Domain.Subscriptions;
 
-namespace TelcoLab.Silo;
+namespace TelcoLab.Api.Infrastructure;
 
 /// <summary>
 /// HTTP adapter that turns the grain's <see cref="IPortingClient"/> port into a

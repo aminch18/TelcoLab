@@ -2,8 +2,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Orleans.Hosting;
 using Orleans.TestingHost;
-using TelcoLab.Abstractions;
-using TelcoLab.Grains;
+using TelcoLab.Domain;
+using TelcoLab.Domain.Subscriptions;
 
 namespace TelcoLab.Tests;
 

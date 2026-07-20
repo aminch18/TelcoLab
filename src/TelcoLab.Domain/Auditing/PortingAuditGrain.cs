@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Orleans.Runtime;
 using Orleans.Streams;
-using TelcoLab.Abstractions;
+using TelcoLab.Domain.Subscriptions;
 
-namespace TelcoLab.Grains;
+namespace TelcoLab.Domain.Auditing;
 
 // A second, independent consumer of the same porting-results stream. The webhook edge
 // does not know this grain exists — adding it cost nothing on the producer side. This

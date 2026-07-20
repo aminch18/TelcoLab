@@ -1,4 +1,4 @@
-namespace TelcoLab.Abstractions;
+namespace TelcoLab.Domain.Subscriptions;
 
 public enum SubscriptionStatus
 {
@@ -75,4 +75,15 @@ public interface ISubscriptionGrain : IGrainWithStringKey
 
     /// <summary>Porting → Active / PortingRejected / PortingCancelled, once the clearing house replies.</summary>
     Task ApplyPortingResultAsync(PortingResult result);
+}
+
+/// <summary>
+/// Outbound port of the grain to the external clearing house. The grain says
+/// "start a port for me"; the implementation (in the host) knows the URL and the
+/// callback address. Keeping this behind an interface keeps the grain testable
+/// and free of HTTP concerns.
+/// </summary>
+public interface IPortingClient
+{
+    Task SubmitPortingRequestAsync(Guid requestId, string msisdn, string donorOperator);
 }

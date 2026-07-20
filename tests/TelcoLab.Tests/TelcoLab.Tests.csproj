@@ -22,8 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\TelcoLab.Grains\TelcoLab.Grains.csproj" />
-    <ProjectReference Include="..\..\src\TelcoLab.Abstractions\TelcoLab.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\TelcoLab.Domain\TelcoLab.Domain.csproj" />
   </ItemGroup>
 
 </Project>

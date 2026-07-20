@@ -1,12 +1,4 @@
-namespace TelcoLab.Abstractions;
-
-public static class StreamConstants
-{
-    public const string ProviderName = "StreamProvider";
-
-    /// <summary>Namespace for porting-result events, keyed by MSISDN.</summary>
-    public const string PortingResults = "porting-results";
-}
+namespace TelcoLab.Domain.Auditing;
 
 /// <summary>
 /// A second consumer of porting results, added without the publisher knowing it exists.
