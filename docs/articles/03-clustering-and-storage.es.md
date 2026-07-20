@@ -77,7 +77,7 @@ El segundo silo nunca vio ocurrir el port. Leyó el estado de la suscripción de
 
 ## Prueba de que es un clúster
 
-Ahora corre **dos** silos a la vez, cada uno en sus puertos, ambos apuntando a la misma base de datos:
+Ahora corre **dos** silos a la vez, ambos apuntando a la misma base de datos. `docker compose up --build` levanta Postgres, el clearing house y dos silos juntos — cada uno en su contenedor, anunciando su propia IP:
 
 ```mermaid
 flowchart TB
@@ -119,4 +119,4 @@ Pero la afirmación arquitectónica se sostiene: de un proceso en tu portátil a
 
 ## La serie, de punta a punta
 
-Empezamos comparando el modelo de actores con el enfoque clásico de cola + repositorio, construimos el flujo de portabilidad como un grain, desacoplamos sus resultados con streams, y ahora lo hemos hecho durable y en clúster. Lo que empezó como "una suscripción es un actor" es ya un sistema distribuido pequeño pero real. Todo el código ejecutable — `docker compose up`, dos `dotnet run` y `demo.sh` — está en el [repositorio TelcoLab](https://github.com/aminch18/TelcoLab).
+Empezamos comparando el modelo de actores con el enfoque clásico de cola + repositorio, construimos el flujo de portabilidad como un grain, desacoplamos sus resultados con streams, y ahora lo hemos hecho durable y en clúster. Lo que empezó como "una suscripción es un actor" es ya un sistema distribuido pequeño pero real. Todo el código ejecutable — un solo `docker compose up --build` para el stack entero en clúster — está en el [repositorio TelcoLab](https://github.com/aminch18/TelcoLab).

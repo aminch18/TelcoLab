@@ -125,26 +125,29 @@ sequenceDiagram
 
 ## Closing the loop: webhook, anti-corruption, and two guards
 
-When the outcome finally arrives, our API edge receives it, authenticates the caller, and routes it straight to the right grain by MSISDN. Before it touches the grain, we translate the third party's wire contract into *our* domain vocabulary — a small [anti-corruption layer](https://learn.microsoft.com/azure/architecture/patterns/anti-corruption-layer):
+When the outcome finally arrives, our API edge receives it, authenticates the caller, and routes it straight to the right grain by MSISDN. Before it touches the grain, we translate the third party's wire contract into *our* domain vocabulary — a small [anti-corruption layer](https://learn.microsoft.com/azure/architecture/patterns/anti-corruption-layer). Each endpoint is a self-contained record — one vertical slice — that [MinApiLib](https://github.com/fernandoescolar/MinApiLib) discovers automatically:
 
 ```csharp
-app.MapPost("/webhooks/clearing", async (
-    PortingResultEvent evt, HttpRequest request, IClusterClient cluster, IConfiguration config) =>
+public record ClearingWebhook() : Post("/webhooks/clearing")
 {
-    if (request.Headers["X-Webhook-Secret"] != config["TelcoLab:WebhookSecret"])
-        return Results.Unauthorized();          // production would verify an HMAC over the body
-
-    var result = new PortingResult
+    public async Task<IResult> HandleAsync(
+        PortingResultEvent evt, HttpRequest request, IConfiguration config, IClusterClient cluster)
     {
-        RequestId  = evt.RequestId,
-        Succeeded  = evt.Outcome == PortingOutcome.Completed,
-        Cancelled  = evt.Outcome == PortingOutcome.Cancelled,
-        RejectionReason = evt.Reason is null ? null : MapReason(evt.Reason.Value)
-    };
+        if (request.Headers["X-Webhook-Secret"] != config["TelcoLab:WebhookSecret"])
+            return Results.Unauthorized();       // production would verify an HMAC over the body
 
-    await cluster.GetGrain<ISubscriptionGrain>(evt.Msisdn).ApplyPortingResultAsync(result);
-    return Results.Ok();
-});
+        var result = new PortingResult
+        {
+            RequestId  = evt.RequestId,
+            Succeeded  = evt.Outcome == PortingOutcome.Completed,
+            Cancelled  = evt.Outcome == PortingOutcome.Cancelled,
+            RejectionReason = evt.Reason is null ? null : MapReason(evt.Reason.Value)
+        };
+
+        await cluster.GetGrain<ISubscriptionGrain>(evt.Msisdn).ApplyPortingResultAsync(result);
+        return Results.Ok();
+    }
+}
 ```
 
 The grain applies it behind two guards:
@@ -199,7 +202,7 @@ It retries the submission (the clearing house dedupes on the request id, so retr
 
 ## Wiring it up
 
-One process co-hosts the Orleans silo and the web API. The API is the edge — inbound webhooks and demo controls; the silo is the distributed actor runtime:
+The `TelcoLab.Api` project co-hosts the Orleans silo and the web API. The API is the edge — inbound webhooks and demo controls, each a vertical slice under `Features/`; the silo is the distributed actor runtime:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -214,9 +217,13 @@ builder.Host.UseOrleans(silo =>
 // The grain's outbound port to the third party, as a typed HttpClient.
 builder.Services.AddHttpClient<IPortingClient, HttpPortingClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["TelcoLab:ClearingHouseUrl"]!));
+
+var app = builder.Build();
+app.MapEndpoints();   // MinApiLib discovers every endpoint record
+app.Run();
 ```
 
-`UseLocalhostClustering` and in-memory storage keep this runnable on one machine; swapping in a real clustering provider and a durable storage/reminder provider is a configuration change, not a redesign — that's [Part 3](00-porting-two-architectures.en.md).
+`UseLocalhostClustering` and in-memory storage keep this runnable on one machine; swapping in a real clustering provider and a durable storage/reminder provider is a configuration change, not a redesign — that's [Part 3](03-clustering-and-storage.en.md).
 
 ## Watching it run
 

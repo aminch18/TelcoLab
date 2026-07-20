@@ -77,7 +77,7 @@ The second silo never saw the port happen. It read the subscription's state from
 
 ## Proof it's a cluster
 
-Now run **two** silos at once, each on its own ports, both pointed at the same database:
+Now run **two** silos at once, both pointed at the same database. `docker compose up --build` brings up Postgres, the clearing house and two silos together — each in its own container, advertising its own IP:
 
 ```mermaid
 flowchart TB
@@ -119,4 +119,4 @@ But the architectural claim holds: from one laptop process to a durable, multi-n
 
 ## The series, end to end
 
-We started by comparing the actor model against the classic queue + repository approach, built the porting workflow as a grain, decoupled its results with streams, and have now made it durable and clustered. What began as "a subscription is an actor" is now a small but genuine distributed system. The full, runnable code — `docker compose up`, two `dotnet run`s, and `demo.sh` — is in the [TelcoLab repository](https://github.com/aminch18/TelcoLab).
+We started by comparing the actor model against the classic queue + repository approach, built the porting workflow as a grain, decoupled its results with streams, and have now made it durable and clustered. What began as "a subscription is an actor" is now a small but genuine distributed system. The full, runnable code — one `docker compose up --build` for the whole clustered stack — is in the [TelcoLab repository](https://github.com/aminch18/TelcoLab).

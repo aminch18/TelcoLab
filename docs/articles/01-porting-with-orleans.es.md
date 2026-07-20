@@ -125,26 +125,29 @@ sequenceDiagram
 
 ## Cerrando el círculo: webhook, anticorrupción y dos guardas
 
-Cuando por fin llega el resultado, el borde de nuestra API lo recibe, autentica al emisor y lo enruta directo al grain correcto por MSISDN. Antes de que toque el grain, traducimos el contrato de cable del tercero a *nuestro* vocabulario de dominio — una pequeña [capa anticorrupción](https://learn.microsoft.com/azure/architecture/patterns/anti-corruption-layer):
+Cuando por fin llega el resultado, el borde de nuestra API lo recibe, autentica al emisor y lo enruta directo al grain correcto por MSISDN. Antes de que toque el grain, traducimos el contrato de cable del tercero a *nuestro* vocabulario de dominio — una pequeña [capa anticorrupción](https://learn.microsoft.com/azure/architecture/patterns/anti-corruption-layer). Cada endpoint es un record autocontenido — una vertical slice — que [MinApiLib](https://github.com/fernandoescolar/MinApiLib) descubre automáticamente:
 
 ```csharp
-app.MapPost("/webhooks/clearing", async (
-    PortingResultEvent evt, HttpRequest request, IClusterClient cluster, IConfiguration config) =>
+public record ClearingWebhook() : Post("/webhooks/clearing")
 {
-    if (request.Headers["X-Webhook-Secret"] != config["TelcoLab:WebhookSecret"])
-        return Results.Unauthorized();          // producción verificaría un HMAC sobre el body
-
-    var result = new PortingResult
+    public async Task<IResult> HandleAsync(
+        PortingResultEvent evt, HttpRequest request, IConfiguration config, IClusterClient cluster)
     {
-        RequestId  = evt.RequestId,
-        Succeeded  = evt.Outcome == PortingOutcome.Completed,
-        Cancelled  = evt.Outcome == PortingOutcome.Cancelled,
-        RejectionReason = evt.Reason is null ? null : MapReason(evt.Reason.Value)
-    };
+        if (request.Headers["X-Webhook-Secret"] != config["TelcoLab:WebhookSecret"])
+            return Results.Unauthorized();       // producción verificaría un HMAC sobre el body
 
-    await cluster.GetGrain<ISubscriptionGrain>(evt.Msisdn).ApplyPortingResultAsync(result);
-    return Results.Ok();
-});
+        var result = new PortingResult
+        {
+            RequestId  = evt.RequestId,
+            Succeeded  = evt.Outcome == PortingOutcome.Completed,
+            Cancelled  = evt.Outcome == PortingOutcome.Cancelled,
+            RejectionReason = evt.Reason is null ? null : MapReason(evt.Reason.Value)
+        };
+
+        await cluster.GetGrain<ISubscriptionGrain>(evt.Msisdn).ApplyPortingResultAsync(result);
+        return Results.Ok();
+    }
+}
 ```
 
 El grain lo aplica tras dos guardas:
@@ -199,7 +202,7 @@ Reintenta el envío (el clearing house deduplica por el request id, así que rei
 
 ## Cableándolo
 
-Un solo proceso co-aloja el silo de Orleans y la API web. La API es el borde — webhooks entrantes y controles de demo; el silo es el runtime distribuido de actores:
+El proyecto `TelcoLab.Api` co-aloja el silo de Orleans y la API web. La API es el borde — webhooks entrantes y controles de demo, cada uno una vertical slice bajo `Features/`; el silo es el runtime distribuido de actores:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -214,9 +217,13 @@ builder.Host.UseOrleans(silo =>
 // El puerto saliente del grain hacia el tercero, como HttpClient tipado.
 builder.Services.AddHttpClient<IPortingClient, HttpPortingClient>(c =>
     c.BaseAddress = new Uri(builder.Configuration["TelcoLab:ClearingHouseUrl"]!));
+
+var app = builder.Build();
+app.MapEndpoints();   // MinApiLib descubre cada record de endpoint
+app.Run();
 ```
 
-`UseLocalhostClustering` y el almacenamiento en memoria lo mantienen ejecutable en una máquina; cambiar a un provider de clustering real y a storage/reminders durables es un cambio de configuración, no un rediseño — eso es la [Parte 3](00-porting-two-architectures.es.md).
+`UseLocalhostClustering` y el almacenamiento en memoria lo mantienen ejecutable en una máquina; cambiar a un provider de clustering real y a storage/reminders durables es un cambio de configuración, no un rediseño — eso es la [Parte 3](03-clustering-and-storage.es.md).
 
 ## Verlo en marcha
 
