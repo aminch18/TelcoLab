@@ -25,8 +25,10 @@ public static class OrleansConfiguration
             return silo
                 .UseLocalhostClustering()
                 .AddMemoryGrainStorage("subscriptionStore")
+                .AddMemoryGrainStorage("transactionalStore")
                 .AddMemoryGrainStorage("PubSubStore")
                 .UseInMemoryReminderService()
+                .UseTransactions()
                 .AddMemoryStreams(StreamConstants.ProviderName);
         }
 
@@ -60,8 +62,10 @@ public static class OrleansConfiguration
         return silo
             .UseAdoNetClustering(o => { o.Invariant = Invariant; o.ConnectionString = connectionString; })
             .AddAdoNetGrainStorage("subscriptionStore", o => { o.Invariant = Invariant; o.ConnectionString = connectionString; })
+            .AddAdoNetGrainStorage("transactionalStore", o => { o.Invariant = Invariant; o.ConnectionString = connectionString; })
             .AddAdoNetGrainStorage("PubSubStore", o => { o.Invariant = Invariant; o.ConnectionString = connectionString; })
             .UseAdoNetReminderService(o => { o.Invariant = Invariant; o.ConnectionString = connectionString; })
+            .UseTransactions()
             .AddMemoryStreams(StreamConstants.ProviderName);
     }
 

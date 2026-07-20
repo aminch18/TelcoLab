@@ -23,7 +23,9 @@ public class TestSiloConfigurator : ISiloConfigurator
     {
         siloBuilder
             .AddMemoryGrainStorage("subscriptionStore")
+            .AddMemoryGrainStorage("transactionalStore")
             .UseInMemoryReminderService()
+            .UseTransactions()
             .AddMemoryStreams(StreamConstants.ProviderName)
             .AddMemoryGrainStorage("PubSubStore")
             .ConfigureServices(services => services.AddSingleton<IPortingClient, FakePortingClient>());

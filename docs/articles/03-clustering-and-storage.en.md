@@ -75,6 +75,40 @@ after restart:   { "status": "Active", "portingAttempts": 1 }
 
 The second silo never saw the port happen. It read the subscription's state from `orleansstorage` on first access. With in-memory storage this returns `Inactive` — the whole history gone.
 
+## What a cluster actually is
+
+It's easy to picture "the grain" as one object and then wonder what the *cluster* adds. The trick is that a grain is one object **per key** — one per MSISDN — so a real system has millions of them, and the cluster is what spreads them across machines and lets you reach any one by identity.
+
+Four things worth separating:
+
+- a **grain** is an identity (`SubscriptionGrain/+34…011`), and there are as many as there are phone numbers;
+- an **activation** is its in-memory instance — Orleans keeps **exactly one per key across the whole cluster** (this is why a grain is single-threaded and needs no locks);
+- a **silo** is one process/node, hosting thousands of activations;
+- the **cluster** is the set of silos, sharing the membership table.
+
+You address a grain by *identity, not location*. `GetGrain("+34…011")` hands you a proxy; when you call it, the cluster finds the one activation — on whichever silo currently holds it, creating it if none exists — and routes there. It's the phone network for objects: you dial a number and reach that one person wherever they are; you never manage which exchange.
+
+```mermaid
+flowchart LR
+    C["Caller<br/>GetGrain('+34…011')"]
+    subgraph cluster["Cluster — placement · directory · membership · failover"]
+        subgraph A["Silo A"]
+            A1(["+34…022"])
+            A2(["+34…037"])
+        end
+        subgraph B["Silo B"]
+            B1(["+34…011"])
+            B2(["+34…058"])
+        end
+    end
+    DB[("Postgres<br/>grain state")]
+    C -->|routed by identity| B1
+    A -.->|idle grains persisted &<br/>reactivated on demand| DB
+    B -.-> DB
+```
+
+So the two-silo run below isn't "one object on two silos" — it's one activation living on one silo, reachable from the other. Create more subscriptions and Orleans spreads them across both; kill a silo and its grains reactivate elsewhere from Postgres. That last part — failover — is the whole reason the cluster exists.
+
 ## Proof it's a cluster
 
 Now run **two** silos at once, both pointed at the same database. `docker compose up --build` brings up Postgres, the clearing house and two silos together — each in its own container, advertising its own IP:

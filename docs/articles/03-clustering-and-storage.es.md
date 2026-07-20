@@ -75,6 +75,40 @@ tras el reinicio:    { "status": "Active", "portingAttempts": 1 }
 
 El segundo silo nunca vio ocurrir el port. Leyó el estado de la suscripción de `orleansstorage` en el primer acceso. Con almacenamiento en memoria esto devuelve `Inactive` — toda la historia perdida.
 
+## Qué es un clúster, en realidad
+
+Es fácil imaginar "el grain" como un objeto y entonces no ver qué añade el *clúster*. El truco: un grain es un objeto **por clave** — uno por MSISDN — así que un sistema real tiene millones, y el clúster es lo que los reparte entre máquinas y te deja alcanzar cualquiera por su identidad.
+
+Cuatro cosas que conviene separar:
+
+- un **grain** es una identidad (`SubscriptionGrain/+34…011`), y hay tantos como números de teléfono;
+- una **activación** es su instancia en memoria — Orleans mantiene **exactamente una por clave en todo el clúster** (por eso un grain es de un solo hilo y no necesita locks);
+- un **silo** es un proceso/nodo, que aloja miles de activaciones;
+- el **clúster** es el conjunto de silos, compartiendo la tabla de membresía.
+
+Te diriges a un grain por *identidad, no por ubicación*. `GetGrain("+34…011")` te da un proxy; cuando lo llamas, el clúster encuentra la única activación — en el silo que la tenga, creándola si no existe — y enruta ahí. Es la red telefónica para objetos: marcas un número y hablas con esa persona esté donde esté; nunca gestionas la central.
+
+```mermaid
+flowchart LR
+    C["Caller<br/>GetGrain('+34…011')"]
+    subgraph cluster["Clúster — placement · directory · membership · failover"]
+        subgraph A["Silo A"]
+            A1(["+34…022"])
+            A2(["+34…037"])
+        end
+        subgraph B["Silo B"]
+            B1(["+34…011"])
+            B2(["+34…058"])
+        end
+    end
+    DB[("Postgres<br/>estado de grains")]
+    C -->|enrutado por identidad| B1
+    A -.->|grains inactivos persistidos y<br/>reactivados bajo demanda| DB
+    B -.-> DB
+```
+
+Así que la ejecución de dos silos de abajo no es "un objeto en dos silos" — es una activación viviendo en un silo, alcanzable desde el otro. Crea más suscripciones y Orleans las reparte entre ambos; mata un silo y sus grains se reactivan en otro desde Postgres. Esa última parte — el failover — es la razón misma de que exista el clúster.
+
 ## Prueba de que es un clúster
 
 Ahora corre **dos** silos a la vez, ambos apuntando a la misma base de datos. `docker compose up --build` levanta Postgres, el clearing house y dos silos juntos — cada uno en su contenedor, anunciando su propia IP:
